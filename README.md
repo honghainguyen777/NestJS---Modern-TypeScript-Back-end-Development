@@ -32,3 +32,9 @@
 | /tasks  | POST | Create a task |
 | /tasks/:id  | DELETE | Delete a task |
 | /tasks/:id/status  | PATCH | Update task status |
+
+### API Endpoints - Auth
+|    Endpoint    | Method | Description |
+| ---------- | ------------- | --------- |
+| /auth/signup  | POST | Sign up |
+| /auth/signin  | POST | Sign in |
