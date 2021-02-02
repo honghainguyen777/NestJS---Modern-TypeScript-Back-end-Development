@@ -56,5 +56,7 @@
 
 ### Run project in dev mode
 - `npm start dev`
+- or `npm run start:dev`
 
-
+### Create a Task Module
+- `nest g module tasks` (`g` = generate, `module` = schematic/path relative to the root folder) -> create a `tasks` folder which contains `tasks.module.ts` in `src`. And the `app.module.ts` is updated
