@@ -65,4 +65,8 @@
 - `AuthController` (`/auth`): `signin()` (`POST /auth/signin`); `signout()` (`POST /auth/signout`)
 - `TasksController` (`/tasks`): `getAllTasks()` (`GET /tasks`); `getTaskById()` (`GET /tasks/:id`); `createTask()` (`POST /tasks`);` deleteTask()` (`DELETE /tasks/:id`); `updateTaskStatus()` (`PATH /tasks/:id`)
 - `UsersController` (`/users`):` getUsers()` (`GET /users/:id`); `createUser()` (`POST /users`);` deleteUser()` (`DELETE /users/:id`)
-- Create the tasks controller: nest g controller tasks --no-spec
+- Create the tasks controller: `nest g controller tasks --no-spec`
+
+#### Create a service
+- `nest g service task --no-spec`
+- --> new "`tasks.service.ts`" file created inside the src/tasks
