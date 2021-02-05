@@ -70,3 +70,7 @@
 #### Create a service
 - `nest g service task --no-spec`
 - --> new "`tasks.service.ts`" file created inside the src/tasks
+
+#### Create models
+- in the src/tasks: create a task.model.ts file
+
