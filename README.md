@@ -73,4 +73,48 @@
 
 #### Create models
 - in the src/tasks: create a task.model.ts file
+- `export interface Task {
+    id: string,
+    title: string,
+    description: string,
+    status: TaskStatus;
+}
+
+// status can only allow in enum
+export enum TaskStatus {
+    OPEN = 'OPEN',
+    IN_PROGRESS = 'IN_PROGRESS',
+    DONE = 'DONE',
+}`
+#### Connect model to service (get updatated) and controller (receive incomming request):
+- In service:
+`createTask(title: string, description: string): Task {
+    const task: Task = {
+        id: uuid(),
+        title,
+        description,
+        status: TaskStatus.OPEN,
+    };
+
+    this.tasks.push(task);
+    return task;
+}
+`
+- In controller
+`@Post()
+createTask(
+    @Body('title') title: string,
+    @Body('description') description: string
+): Task {
+    return this.tasksService.createTask(title, description);
+}`
+
+- --> In comming HTTP request will come to the controller which the distribute title and desctiption to a service, service updata/retrive the information and return a data to controller -> send back the data to client via HTTP Response
+- too many transfers and can be messy if we have more pips -> difficult to maintain and lose the sense of reliability in the shape of data
+
+- --> better to use Data Transfer Objects (DTOs)
+#### Data Transfer Objects (DTOs)
+- create a new `dto` folder in `tasks`
+- inside `dto`, create `create-task.dto.ts` file
+- define `dto` as a TS class
 
