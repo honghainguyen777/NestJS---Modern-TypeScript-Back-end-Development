@@ -11,6 +11,10 @@ export class TasksService {
         return this.tasks;
     }
 
+    getTaskById(id: string): Task {
+        return this.tasks.find(task => task.id === id);
+    }
+
     createTask(createTaskDto: CreateTaskDto): Task {
         const { title, description } = createTaskDto;
         
@@ -23,5 +27,9 @@ export class TasksService {
 
         this.tasks.push(task);
         return task; // good practice to return the newly created resource in REST API because front-end will not need to call getAllTasks to update but update only the returned one
+    }
+
+    deleteTask(id: string): void {
+        this.tasks = this.tasks.filter(task => task.id !== id);
     }
 }
