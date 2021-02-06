@@ -32,4 +32,12 @@ export class TasksService {
     deleteTask(id: string): void {
         this.tasks = this.tasks.filter(task => task.id !== id);
     }
+
+    updateTask(id: string, status: TaskStatus): Task {
+        // return from the find() above return a reference not the element
+        // we can change the status of the element here in the tasks array
+        const task = this.getTaskById(id);
+        task.status = status;
+        return task;
+    }
 }
