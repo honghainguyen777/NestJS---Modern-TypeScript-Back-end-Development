@@ -118,3 +118,28 @@ createTask(
 - inside `dto`, create `create-task.dto.ts` file
 - define `dto` as a TS class
 
+
+#### Use NestJS Pipes for data validation
+- Install class-validator and class-transformer: `npm install class-validator class-transformer`
+- Perform the validation in the dto, create-task.dto.ts: add decorators that add some rults to each property of the dto
+- https://github.com/typestack/class-validator#validation-decorators
+- To use in DTO files:
+```ts
+import { IsNotEmpty } from 'class-validator';
+export class CreateTaskDto {
+    @IsNotEmpty()
+    title: string;
+
+    @IsNotEmpty()
+    description: string;
+}
+```
+- In the controller:
+```ts
+@Post()
+@UsePipes(ValidationPipe)
+createTask(@Body() createTaskDto: CreateTaskDto): Task {
+    return this.tasksService.createTask(createTaskDto);
+}
+
+
