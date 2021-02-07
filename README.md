@@ -177,4 +177,10 @@ export class GetTasksFilterDto {
 - and inside the controller: `getTasks(@Query(ValidationPipe) filterDto: GetTasksFilterDto): Task[] {...}`
 
 ### Database for this project: PostgreSQL and use pgAdmin administration and management
-
+- Use PostgreSQL as database and manage by pgAdmin
+- Query in NestJS using TypeORM (Object Relational Mapping for TypeScript and JavaScript).
+- Install: `npm install @nestjs/typeorm typeorm pg` -> `pg` is database driver for postgreSQL, `typeorm` is TypeORM npm module, `@nestjs/typeorm` is specific bridge that NestJS created for working with typeORM
+- We have multiple ways of configuring the database connection. One way is using a static JSON file, another way could be providing the data as an object, the third way could be proving the data asynchronously form a service.
+- TypeORM Entity Configuration: entities: [__dirname + '/../**/*.entity.{js,ts}']
+- In this project, we first will use the data as an object
+- autoLoadEntities: true
