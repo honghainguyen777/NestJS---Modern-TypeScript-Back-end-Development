@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { Task, TaskStatus} from './task.model';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
+
 
 @Controller('tasks')
 export class TasksController {
@@ -9,10 +11,17 @@ export class TasksController {
     constructor(private tasksService: TasksService) {}
 
     // kind of request getAllTasks is going to handle
+    // @Query is when we want to retireve the query parameters (define in GetTaskFilterDto) all from the query parameters
+    // filerDto will take two params from the request path: tasks/?status=OPEN&search=hello
     @Get()
-    getAllTasks(): Task[] {
+    getTasks(@Query() filterDto: GetTasksFilterDto): Task[] {
+        // console.log(filterDto); // print {status: "OPEN", search: "hello"}
         // this will be sent back to clients
-        return this.tasksService.getAllTasks();
+        if (Object.keys(filterDto).length) {
+            return this.tasksService.getTasksWithFilters(filterDto);
+        } else {
+            return this.tasksService.getAllTasks();
+        }
     }
 
     // @Post()
