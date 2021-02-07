@@ -3,6 +3,7 @@ import { TasksService } from './tasks.service';
 import { Task, TaskStatus} from './task.model';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
+import { TaskStatusValidationPipe } from './pipes/task-status-validation.pipe';
 
 
 @Controller('tasks')
@@ -14,7 +15,8 @@ export class TasksController {
     // @Query is when we want to retireve the query parameters (define in GetTaskFilterDto) all from the query parameters
     // filerDto will take two params from the request path: tasks/?status=OPEN&search=hello
     @Get()
-    getTasks(@Query() filterDto: GetTasksFilterDto): Task[] {
+    // NestJS takes the DTO which is type of filterDto parameter and validate the incoming data based on class-vadiations that we add in GetTasksFilterDto
+    getTasks(@Query(ValidationPipe) filterDto: GetTasksFilterDto): Task[] {
         // console.log(filterDto); // print {status: "OPEN", search: "hello"}
         // this will be sent back to clients
         if (Object.keys(filterDto).length) {
@@ -55,7 +57,10 @@ export class TasksController {
     }
 
     @Patch('/:id/status')
-    updateTask(@Param('id') id: string, @Body('status') status: TaskStatus): Task {
+    updateTask(
+        @Param('id') id: string, 
+        @Body('status', TaskStatusValidationPipe) status: TaskStatus
+    ): Task {
         return this.tasksService.updateTask(id, status);
     }
 }

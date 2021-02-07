@@ -141,5 +141,40 @@ export class CreateTaskDto {
 createTask(@Body() createTaskDto: CreateTaskDto): Task {
     return this.tasksService.createTask(createTaskDto);
 }
+```
 
+- Create custom validation pipes: create a folder `pipes` inside `tasks` folder. Inside pipes, create a file named `task-status-validation.pipe.ts`
+EXP:
+```ts
+import { ArgumentMetadata, PipeTransform } from "@nestjs/common";
+
+export class TaskStatusValidationPipe implements PipeTransform {
+    transform(value: any, metadata: ArgumentMetadata) {
+        console.log('value', value);
+        console.log('metadata', metadata);
+        
+        return true;
+    }
+}
+```
+- --> Apply the pipe specifically to the status parameter in the tasks.controller.ts
+
+- We can also use it in our DTOs.
+```ts
+export class GetTasksFilterDto {
+    // check if the given value is empty, if so ignores all the validators on the property
+    // here the status and search
+    @IsOptional()
+    // check if value is in a array of allowed values
+    @IsIn([TaskStatus.OPEN, TaskStatus.IN_PROGRESS, TaskStatus.DONE])
+    status: TaskStatus;
+
+    @IsOptional()
+    @IsNotEmpty()
+    search: string;
+}
+```
+- and inside the controller: `getTasks(@Query(ValidationPipe) filterDto: GetTasksFilterDto): Task[] {...}`
+
+### Database for this project: PostgreSQL and use pgAdmin administration and management
 
