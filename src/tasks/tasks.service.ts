@@ -97,6 +97,13 @@ export class TasksService {
     //     this.tasks = this.tasks.filter(task => task.id !== found.id);
     // }
 
+    async updateTaskStatus(id: number, status: TaskStatus): Promise<Task> {
+        const task = await this.getTaskById(id);
+        task.status = status;
+        await task.save();
+        return task;
+    }
+
     // updateTask(id: string, status: TaskStatus): Task {
     //     // return from the find() above return a reference not the element
     //     // we can change the status of the element here in the tasks array
