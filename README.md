@@ -181,6 +181,73 @@ export class GetTasksFilterDto {
 - Query in NestJS using TypeORM (Object Relational Mapping for TypeScript and JavaScript).
 - Install: `npm install @nestjs/typeorm typeorm pg` -> `pg` is database driver for postgreSQL, `typeorm` is TypeORM npm module, `@nestjs/typeorm` is specific bridge that NestJS created for working with typeORM
 - We have multiple ways of configuring the database connection. One way is using a static JSON file, another way could be providing the data as an object, the third way could be proving the data asynchronously form a service.
-- TypeORM Entity Configuration: entities: [__dirname + '/../**/*.entity.{js,ts}']
-- In this project, we first will use the data as an object
-- autoLoadEntities: true
+- We create a `typeorm.config.ts` file under the src/config folder
+```ts
+export const typeOrmConfig: TypeOrmModuleOptions = {
+    type: 'postgres',
+    host: 'localhost',
+    port: 5432,
+    username: 'postgres',
+    password: '<password here>',
+    database: '<name of the database>',
+    autoLoadEntities: true,
+    synchronize: true,
+};
+```
+- In the `app.module.ts`
+```ts
+@Module({
+  imports: [TasksModule,
+  TypeOrmModule.forRoot(typeOrmConfig)],
+})
+```
+- Create an entity for the app: create `task.entity.ts` under the `tasks` folder
+- Define entities:
+```ts
+@Entity()
+export class Task extends BaseEntity {
+    // define an id as a number, a primary value and increase when we create a new task
+    @PrimaryGeneratedColumn()
+    id: number;
+
+    @Column()
+    title: string;
+
+    @Column()
+    description: string;
+
+    @Column()
+    status: TaskStatus;
+}
+```
+
+- We could use the entity classing our service to perform operations such as finding tasks, leading tasks, creating tasks etc. However, this may end up with a lot of code or any database operations.
+- --> We want to split logic if we can always as long as the split makes sense. -> Persistence layer in the shape of a repository. By using repositories for our entities, we apply that repository pattern (http://typeorm.delightful.studio/classes/_repository_repository_.repository.html).
+- In the repository we can still perform same operations we would normally perform on the Entity class directly, but we can also add more custom logic -> become very useful in our application. -> We end up encapsulating heavy logic related to persistence layer to our database and we also end up removing code from our service which results in shorter methods into service and code that is easier to understand.
+- We create a file: `task.repository.ts` in the `tasks` folder.
+```ts
+@EntityRepository(Task)
+export class TaskRepository extends Repository<Task> {
+
+}
+```
+- we have to ask the TaskRepository to our ecosystem in the task.module.ts
+```ts
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([TaskRepository]) // all repositories we want to include in our ecosystem (the tasks module)
+  ],
+  controllers: [TasksController],
+  providers: [TasksService],
+})
+```
+- --> we have everything ready for applying data persistence through the application. --> we have to refactor the code by commenting all methods in both the controller and the service. We also can delete our Task interface (task.model.ts) because we have already defined the task data in our Entity. We move the:
+```ts
+export enum TaskStatus {
+    OPEN = 'OPEN',
+    IN_PROGRESS = 'IN_PROGRESS',
+    DONE = 'DONE',
+}
+```
+to a new file: `task-status.enum.ts`. And remove the `task.model.ts`. We also don't need `uuid` package because we have `@PrimaryGeneratedColumn()` decorator
+
