@@ -48,10 +48,6 @@ export class TasksService {
         return found;
     }
 
-    async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
-        return this.taskRepository.createTask(createTaskDto);
-    }
-
     // getTaskById(id: string): Task {
     //     const found = this.tasks.find(task => task.id === id);
     //     if (!found) {
@@ -59,6 +55,10 @@ export class TasksService {
     //     }
     //     return found;
     // }
+
+    async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
+        return this.taskRepository.createTask(createTaskDto);
+    }
 
     // createTask(createTaskDto: CreateTaskDto): Task {
     //     const { title, description } = createTaskDto;
@@ -73,6 +73,23 @@ export class TasksService {
     //     this.tasks.push(task);
     //     return task; // good practice to return the newly created resource in REST API because front-end will not need to call getAllTasks to update but update only the returned one
     // }
+
+    // 1st way of removing an entity
+    // async deleteTask(id: number): Promise<void> {
+    //     const found = await this.getTaskById(id);
+    //     // we can pass in an array of entities -> multiple entities removed
+    //     // better to use delete because it task two time accessing the database
+    //     // one is getTaskById and the second is remove
+    //     await this.taskRepository.remove(found);
+    // }
+
+    // 2nd way of removing an entity
+    async deleteTask(id: number): Promise<void> {
+        const result = await this.taskRepository.delete(id);
+        if (result.affected === 0) {
+            throw new NotFoundException(`Task with ID "${id}" not found`);
+        }
+    }
 
     // deleteTask(id: string): void {
     //     // if not found, throw error as in the getTaskById method
