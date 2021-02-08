@@ -14,6 +14,10 @@ export class TasksService {
         @InjectRepository(TaskRepository)
         private taskRepository: TaskRepository,
     ){}
+
+    async getTasks(filterDto: GetTasksFilterDto): Promise<Task[]> {
+        return this.taskRepository.getTasks(filterDto)
+    }
     // private tasks: Task[] = []; // been removed
 
     // getAllTasks(): Task[] {

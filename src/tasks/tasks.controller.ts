@@ -12,6 +12,10 @@ export class TasksController {
     // tasksService has type of TaskService - a class
     constructor(private tasksService: TasksService) {}
 
+    @Get()
+    getTasks(@Query(ValidationPipe) filterDto: GetTasksFilterDto) {
+        return this.tasksService.getTasks(filterDto);
+    }
     // // kind of request getAllTasks is going to handle
     // // @Query is when we want to retireve the query parameters (define in GetTaskFilterDto) all from the query parameters
     // // filerDto will take two params from the request path: tasks/?status=OPEN&search=hello
