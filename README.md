@@ -394,6 +394,7 @@ export class TasksController {
 - Crete `user.entity.ts` file under auth folder.
 ```ts
 @Entity()
+@Unique(['username'])
 export class User extends BaseEntity {
     @PrimaryGeneratedColumn()
     id: number;
@@ -405,6 +406,7 @@ export class User extends BaseEntity {
     password: string;
 }
 ```
+- `@Unique(['username'])` will talk later in the validation (existance of username)
 - Create a `user.repository.ts` under auth folder for heavy database related logic so that we don't have to write it in the service.
 ```ts
 @EntityRepository(User)
@@ -432,3 +434,106 @@ export class AuthService {
     ){}
 }
 ```
+
+#### Signup in dto folder under auth
+
+##### User Input validation
+- create a `auth-credentials.dto.ts` file for handling signup, signin
+```ts
+export class AuthCredentialsDto {
+    username: string;
+    password: string;
+}
+```
+- Create signUp method in UserRepository class:
+```ts
+async signUp(authCredentialsDto: AuthCredentialsDto): Promise<void> {
+    const { username, password } = authCredentialsDto;
+
+    const user = new User();
+    user.username = username;
+    user.password = password;
+    await user.save();
+}
+```
+- Inject the signUp to our Auth service
+```ts
+async signUp(authCredentialsDto: AuthCredentialsDto): Promise<void> {
+    return this.userRepository.signUp(authCredentialsDto);
+}
+```
+- Call the signUp service method and be triggered by our Rest API (after inject dependency injection into our controller). 
+```ts
+@Controller('auth')
+export class AuthController {
+    constructor(
+        private authService: AuthService,
+    ){}
+
+    @Post('/signup')
+    signUp(@Body() authCredentialsDto: AuthCredentialsDto): Promise<void> {
+        return this.authService.signUp(authCredentialsDto);
+    }
+}
+```
+
+- Validation:
+```ts
+export class AuthCredentialsDto {
+    @IsString()
+    @MinLength(4)
+    @MaxLength(20)
+    username: string;
+
+    @IsString()
+    @MinLength(8)
+    @MaxLength(20)
+    // @MaxLength(20, {message: <customer message>})
+    @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {message: "password too weak"})
+    password: string;
+}
+```
+Using regular expression in the password will strengthen the password. Here, at least one number or special character.
+
+- Apply the validation rules to our entire request Body in the controller using ValidationPipe: 
+```ts
+signUp(@Body(ValidationPipe) authCredentialsDto: AuthCredentialsDto): Promise<void> {...}
+```
+
+##### Check existance of username
+- Two ways to do this validation: 
+1. logic in the user.repository.ts: 
+```ts
+const exists = this.findOne({ username });
+if (exists) {
+    // ... throw some error
+}
+```
+- -> with this, we have to send two queries to the database (`findOne`, and `await user.save()`)
+
+2. Specify the username as unique in the database level: add `@Unique(['username'])` decorator in the User class (`user.entity.ts`)
+- When we create a new user, and perform user.save() in the Signup class, the database will respond with an Internal Server Error.
+- Now the UserRepository will be:
+```ts
+@EntityRepository(User)
+export class UserRepository extends Repository<User> {
+    async signUp(authCredentialsDto: AuthCredentialsDto): Promise<void> {
+        const { username, password } = authCredentialsDto;
+        const user = new User();
+        user.username = username;
+        user.password = password;
+        try {
+            await user.save();
+        } catch(error) {
+            if (error.code === '23505') { // duplicate username
+                throw new ConflictException("Username already exists");
+            } else {
+                throw new InternalServerErrorException(); // throw 600 error for anything that is on handled
+            }
+        }
+    }
+}
+```
+
+
+
