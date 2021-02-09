@@ -228,7 +228,7 @@ export class Task extends BaseEntity {
 ```ts
 @EntityRepository(Task)
 export class TaskRepository extends Repository<Task> {
-
+    // see detailed code below
 }
 ```
 - we have to ask the TaskRepository to our ecosystem in the task.module.ts
@@ -251,3 +251,184 @@ export enum TaskStatus {
 ```
 to a new file: `task-status.enum.ts`. And remove the `task.model.ts`. We also don't need `uuid` package because we have `@PrimaryGeneratedColumn()` decorator
 
+#### Object Relational Mapping (ORM) and TypeORM
+
+##### Object Relational Mapping (ORM)
+- ORM is a technique that lets you query and manipulate data from a database, using an object-oriented paradigm.
+- There are many ORM libraries that allow developers to communicate to the database using their preferred programming language - rather than sending plain queries directly.
+- Pros and Cons of using an ORM library:
+###### Pros
+- Writing the data model in one place - easier to maintain. Less repetition.
+- Lots of things done automatically - database handlong, data types, relations etc.
+- No need to write SQL syntax (easy to learn, hard to master). Using your natural way of coding
+- Database abstraction - you can change the database type whenever you wish.
+- Leverages OPP, therefore things like inheritance are easy to achieve.
+###### Cons
+- You have to learn it, and ORM libraries are not always simple.
+- Performance is alright, but it's easy to neglect
+- Makes it easy to forget (or never learn) what's happening behind the scenes, which can lead to variety of maintainability issues.
+
+##### TypeORM
+- TypeORM is an ORM library that can run in Node.js and be used with TypeScript (or JavaScript).
+- It helps us define and manage entities, repositories, columns, relations, replication, indices, queries, logging and so much more.
+EXP: Retrieving all tasks owned by "Ashley" and are of status "Done".
+TypeORM: const tasks = await Task.find({status:'DONE', user: 'Ashley'});
+Pure JavaScript:
+db.query('SELECT * FROM tasks WHERE status = "DONE" AND user = "Ashley"', (err, result) => {
+	if (err) {
+		throw new Error('Could not retrieve tasks!');
+	}
+	tasks = result.rows;
+});
+- read more typeORM: https://typeorm.io
+
+#### TypeORM in this project
+- Refactoring the services using async-await (query data from database take some time)
+- Introducing EntityRepository:
+```ts
+@EntityRepository(Task)
+export class TaskRepository extends Repository<Task> {
+    async getTasks(filterDto: GetTasksFilterDto): Promise<Task[]> {
+        const { status, search } = filterDto;
+        const query = this.createQueryBuilder('task');
+        if (status) {
+            query.andWhere('task.status = :status', { status });
+        }
+        if (search) {
+            query.andWhere('(task.title LIKE :search OR task.description LIKE :search)', { search: `%${search}%` });
+        }
+        const tasks = await query.getMany();
+        return tasks;
+    }
+    async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
+        const { title, description } = createTaskDto;
+        const task = new Task();
+        task.title = title;
+        task.description = description;
+        task.status = TaskStatus.OPEN;
+        await task.save();
+        return task;
+    }
+}
+```
+
+- Refactor all methods in service
+```ts
+@Injectable()
+export class TasksService {
+    constructor(
+        @InjectRepository(TaskRepository)
+        private taskRepository: TaskRepository,
+    ){}
+
+    async getTasks(filterDto: GetTasksFilterDto): Promise<Task[]> {
+        return this.taskRepository.getTasks(filterDto)
+    }
+
+    async getTaskById(id: number): Promise<Task> {
+        const found = await this.taskRepository.findOne(id);
+        if (!found) {
+            throw new NotFoundException(`Task with ID "${id}" not found`); 
+        }
+
+        return found;
+    }
+
+    async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
+        return this.taskRepository.createTask(createTaskDto);
+    }
+
+    async deleteTask(id: number): Promise<void> {
+        const result = await this.taskRepository.delete(id);
+        if (result.affected === 0) {
+            throw new NotFoundException(`Task with ID "${id}" not found`);
+        }
+    }
+
+    async updateTaskStatus(id: number, status: TaskStatus): Promise<Task> {
+        const task = await this.getTaskById(id);
+        task.status = status;
+        await task.save();
+        return task;
+    }
+}
+```
+- Refactor all methods in controller
+```ts
+@Controller('tasks')
+export class TasksController {
+    constructor(private tasksService: TasksService) {}
+
+    @Get()
+    getTasks(@Query(ValidationPipe) filterDto: GetTasksFilterDto) {
+        return this.tasksService.getTasks(filterDto);
+    }
+    @Get('/:id')
+    getTaskById(@Param('id', ParseIntPipe) id: number): Promise<Task> {
+        return this.tasksService.getTaskById(id);
+    }
+    @Post()
+    @UsePipes(ValidationPipe)
+    createTask(@Body() createTaskDto: CreateTaskDto): Promise<Task> {
+        return this.tasksService.createTask(createTaskDto);
+    }
+    @Delete('/:id')
+    deleteTask(@Param('id', ParseIntPipe) id: number): Promise<void> {
+        return this.tasksService.deleteTask(id);
+    }
+    @Patch('/:id/status')
+    updateTask(
+        @Param('id', ParseIntPipe) id: number, 
+        @Body('status', TaskStatusValidationPipe) status: TaskStatus
+    ): Promise<Task> {
+        return this.tasksService.updateTaskStatus(id, status);
+    }
+}
+```
+### Authentication, authorization and users
+- Generate Auth module: `nest g module auth`
+- Generate Auth controller: `nest g controller auth --no-spec`
+- Generate Auth service: `nest g service auth --no-spec`
+
+#### Setup database-related works
+- Crete `user.entity.ts` file under auth folder.
+```ts
+@Entity()
+export class User extends BaseEntity {
+    @PrimaryGeneratedColumn()
+    id: number;
+
+    @Column()
+    username: string;
+
+    @Column()
+    password: string;
+}
+```
+- Create a `user.repository.ts` under auth folder for heavy database related logic so that we don't have to write it in the service.
+```ts
+@EntityRepository(User)
+export class UserRepository extends Repository<User> {
+    
+}
+```
+- To make use the UserRepository available for in injection throughout our modelue, import it to Our Module (auth.module.ts):
+
+```ts
+@Module({
+    imports: [
+        TypeOrmModule.forFeature([UserRepository])
+    ],
+  ...
+})
+```
+- In the auth service, inject the UserRepository using dependency Injection in the constructor. UserRepository now can be used inside the AuthService class
+```ts
+@Injectable()
+export class AuthService {
+    constructor(
+        @InjectRepository(UserRepository)
+        private userRepository: UserRepository,
+    ){}
+}
+```
