@@ -533,7 +533,28 @@ export class UserRepository extends Repository<User> {
         }
     }
 }
+```   
+
+##### Security: Hashing Password & Using Salts
+- Salt is unique for every user
+- Using bcryot package: `npm install bcrypt`;
+- In user.repository.ts:
+```ts
+import * as bcrypt from "bcrypt";
 ```
-
-
-
+- create a private method inside the UserRepository to perform password hashing
+```ts
+private async hashPassword(password: string, salt: string): Promise<string> {
+    return bcrypt.hash(password, salt);
+}
+```
+- We also need to store the `salt` for each user. Add new field in the user.entity.ts:
+```ts
+@Column()
+salt: string;
+```
+- generate salt and hash the password
+```ts
+ user.salt = await bcrypt.genSalt();
+user.password = await this.hashPassword(password, user.salt); // store the salt
+```
