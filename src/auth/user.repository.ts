@@ -16,8 +16,8 @@ export class UserRepository extends Repository<User> {
         // }
         const user = new User();
         user.username = username;
-        user.salt = await bcrypt.genSalt();
-        user.password = await this.hashPassword(password, user.salt);
+        const salt = await bcrypt.genSalt();
+        user.password = await this.hashPassword(password, salt);
         try {
             await user.save();
         } catch(error) {
@@ -27,6 +27,18 @@ export class UserRepository extends Repository<User> {
                 throw new InternalServerErrorException(); // throw 600 error for anything that is on handled
             }
         }
+    }
+
+    // validate if the password is correct
+    async validateUserPassword(authCredentialsDto: AuthCredentialsDto): Promise<string> {
+        const { username, password } = authCredentialsDto;
+        const user = await this.findOne({ username });
+        if (user && await bcrypt.compare(password, user.password)) {
+            return user.username;
+        } else {
+            return null;
+        }
+
     }
 
     private async hashPassword(password: string, salt: string): Promise<string> {

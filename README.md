@@ -548,13 +548,38 @@ private async hashPassword(password: string, salt: string): Promise<string> {
     return bcrypt.hash(password, salt);
 }
 ```
-- We also need to store the `salt` for each user. Add new field in the user.entity.ts:
+<!-- - We also need to store the `salt` for each user. Add new field in the user.entity.ts:
 ```ts
 @Column()
 salt: string;
-```
+``` -->
+- we actually don't need to save the salt. Salt is already included in the hashed password. Saving salts are used in bcrypt exclusively.
 - generate salt and hash the password
 ```ts
- user.salt = await bcrypt.genSalt();
-user.password = await this.hashPassword(password, user.salt); // store the salt
+const salt = await bcrypt.genSalt();
+user.password = await this.hashPassword(password, salt); // store the salt
 ```
+
+- Password validation (Signin): -> return username if the password is correct
+```ts
+async validateUserPassword(authCredentialsDto: AuthCredentialsDto): Promise<string> {
+    const { username, password } = authCredentialsDto;
+    const user = await this.findOne({ username });
+    if (user && await bcrypt.compare(password, user.password)) {
+        return user.username;
+    } else {
+        return null;
+    }
+}
+```
+- Inject the validateUserPassword to our Auth service
+```ts
+async signIn(AuthCredentialsDto: AuthCredentialsDto) {
+    const username = await this.userRepository.validateUserPassword(AuthCredentialsDto);
+    if (!username) {
+        throw new UnauthorizedException("Invalid credentials");
+    }
+}
+```
+
+
