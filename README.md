@@ -582,4 +582,91 @@ async signIn(AuthCredentialsDto: AuthCredentialsDto) {
 }
 ```
 
+##### Setting up the JWT Module and Passport.js
+- Installation: `npm install @nestjs/jwt @nestjs/passport passport passport-jwt` (here `@nestjs/jwt` is the wrapper for the module from nestjs for implementing jwt, `@nestjs/jwt` is the wrapper for the module from nestjs for implementing passport, `passport` is the actual passport library, `passport-jwt` is for configuring passport to use jwt tokens)
+- add passprt stratery amd JwtModule into imports field of our Module (auth.module.ts):
+```ts
+PassportModule.register({ defaultStrategy: 'jwt' }),
+JwtModule.register({
+    secret: JWT_SECRET, // save key
+    signOptions: {
+    expiresIn: 3600,
+    }
+}),
+```
+- -> we imported JwtModule in the @Module, now the Module exports a service provider, and then when you go to get a jwt service and with this service, you can perform certain operations such as creating the tokens, signing the token. That means we can inject it using dependency injection by adding a property to the `AuthService`: `private jwtService: JwtService`
+- Generating jwt token when the user signin successfully, and then return the access token:
+```ts
+async signIn(AuthCredentialsDto: AuthCredentialsDto) {
+    ...
+    const payload = { username }; // no sensitive infor
+    const accessToken = await this.jwtService.sign(payload);
 
+    return { accessToken };
+}
+```
+- It may be better if we extract the payload structure into an `interface` because it will be will be used in more places around the application. -> create `jwt-payload.interface.ts` in the `auth` folder.
+- In signin service:
+```ts
+async signIn(AuthCredentialsDto: AuthCredentialsDto): Promise<{accessToken: string}> {
+    ...
+    const payload: JwtPayload = { username }; // payload of type JwtPayload
+    ....
+}
+```
+- Add the return type of SignIn controller:
+```ts
+signIn(@Body(ValidationPipe) authCredentialsDto: AuthCredentialsDto): Promise<{accessToken: string}> {}
+```
+###### Setting up the JWT Strategy for Authorization
+- create `jwt.strategy.ts` file in the auth module
+- create an Injectable strategy:
+```ts
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+    constructor(
+        // userRepository injected to our strategy
+        @InjectRepository(UserRepository)
+        private userRepository: UserRepository,
+    ) {
+        super({
+            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            secretOrKey: JWT_SECRET,
+        });
+    }
+
+    async validate(payload: JwtPayload): Promise<User> {
+        const { username } = payload;
+        const user = await this.userRepository.findOne({ username });
+
+        if (!user) {
+            throw new UnauthorizedException();
+        }
+        return user;
+    }
+}
+```
+- add the service as a provider to auth module auth.module,ts:
+```ts
+providers: [
+    AuthService,
+    JwtStrategy, // here
+]
+```
+- we also export the JwtStratery so it can be used in other modules for certain operations, also PassportModule to guard other operations with Jwt and passport.js:
+```ts
+provides: [...],
+exports: [
+    JwtStrategy,
+    PassportModule,
+]
+```
+- create temporary handler in the auth.controller.ts for testing our authorization:
+```ts
+@Post('/test')
+@UseGuards(AuthGuard()) // controller-scoped guard (we can also have method-scoped, or global-scoped). This one is only for the test()
+test(@Req() req) { // @Req() to get entire request incl. body, header,...
+    console.log(req);
+}
+```
+- Test in Postman: POST request, add `Authorization` to Headers with value of "Bearer <assestoken-from-signin>" 
