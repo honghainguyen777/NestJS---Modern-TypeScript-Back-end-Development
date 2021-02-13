@@ -744,3 +744,20 @@ async createTask(createTaskDto: CreateTaskDto, user: User): Promise<Task> {
     return task;
 }
 ```
+- Perform adding `@GetUser() user: User` to all other services (delete, update).
+
+#### Logging
+- We have so many operations, some are very important, some are less important, some are destructive for users and some are not. If something goes wrong, we could use logging to help us be aware of that. We could also provide some useful information that will help us find the problem and the cause for what went wrong.
+##### Types of Logs
+- Log - General purpose logging of importaint information.
+- Warning - Unhandled issue that is NOT fatal or destructive
+- Error - Unhandled issue that is fatal or destructive
+- Debug - Useful information that can help us debug the logic in case of an error/warning. Intended for developers
+- Verbose - Information providing insignts about the behavior of the applicantion. Intended for operators (for example, support). Usually, "too much information".
+- sytax at place we want to log: 
+```ts
+private logger = new Logger('Place to use the logger, classname');
+// and apply it any where we want to log inside the class
+this.logger.verbose("logging message here");
+`
+- Read more at: https://docs.nestjs.com/techniques/logger

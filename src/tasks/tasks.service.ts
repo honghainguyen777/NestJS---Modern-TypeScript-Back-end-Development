@@ -44,8 +44,8 @@ export class TasksService {
     //     return tasks;
     // }
 
-    async getTaskById(id: number): Promise<Task> {
-        const found = await this.taskRepository.findOne(id);
+    async getTaskById(id: number, user: User): Promise<Task> {
+        const found = await this.taskRepository.findOne({ where: { id, userId: user.id } });
         if (!found) {
             throw new NotFoundException(`Task with ID "${id}" not found`); // 404 response, message = Not Found if not specify message by default
         }
@@ -89,10 +89,10 @@ export class TasksService {
     // }
 
     // 2nd way of removing an entity
-    async deleteTask(id: number): Promise<void> {
-        const result = await this.taskRepository.delete(id);
+    async deleteTask(id: number, user: User): Promise<void> {
+        const result = await this.taskRepository.delete({ id, userId: user.id });
         if (result.affected === 0) {
-            throw new NotFoundException(`Task with ID "${id}" not found`);
+            throw new NotFoundException(`Task with ID "${id}" not found`); // 404 instead of 40, better to not expose that the task exists but not authorized
         }
     }
 
@@ -102,8 +102,8 @@ export class TasksService {
     //     this.tasks = this.tasks.filter(task => task.id !== found.id);
     // }
 
-    async updateTaskStatus(id: number, status: TaskStatus): Promise<Task> {
-        const task = await this.getTaskById(id);
+    async updateTaskStatus(id: number, status: TaskStatus, user: User): Promise<Task> {
+        const task = await this.getTaskById(id, user);
         task.status = status;
         await task.save();
         return task;
