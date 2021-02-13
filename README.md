@@ -670,3 +670,26 @@ test(@Req() req) { // @Req() to get entire request incl. body, header,...
 }
 ```
 - Test in Postman: POST request, add `Authorization` to Headers with value of "Bearer <assestoken-from-signin>" 
+
+
+###### Utilize Passport to retrieve the user entity from the database and inject into the request object
+- Best way is to create a custom Decorator to get only the data we want in the request object
+- create a `get-user.decorator.ts` file:
+```ts
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { User } from './user.entity';
+
+export const GetUser = createParamDecorator((data, ctx: ExecutionContext): User => {
+    const req = ctx.switchToHttp().getRequest();
+    return req.user;
+});
+```
+
+##### Guarding the Tasks routes (Tasks controller)
+- We need to import the Auth Module into the Task Module. Add `AuthModule` to the `imports` array of the `@Module` (tasks/tasks.module.ts).
+- Apply some Guard/s in to Tasks controller for the entire TasksController class (tasks.modules.ts):
+```ts
+@Controller('tasks')
+@UseGuards(AuthGuard)
+export class TasksController {}
+```
