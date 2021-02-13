@@ -635,7 +635,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
 
-    async validate(payload: JwtPayload): Promise<User> {
+    async validate(payload: JwtPayload): Promise<User> { //must exist when defining a strategy
         const { username } = payload;
         const user = await this.userRepository.findOne({ username });
 
@@ -672,7 +672,7 @@ test(@Req() req) { // @Req() to get entire request incl. body, header,...
 - Test in Postman: POST request, add `Authorization` to Headers with value of "Bearer <assestoken-from-signin>" 
 
 
-###### Utilize Passport to retrieve the user entity from the database and inject into the request object
+###### Utilize Passport to retrieve the user entity from the database and inject into the request object (This is only for testing to get the use infor)
 - Best way is to create a custom Decorator to get only the data we want in the request object
 - create a `get-user.decorator.ts` file:
 ```ts
@@ -684,12 +684,63 @@ export const GetUser = createParamDecorator((data, ctx: ExecutionContext): User 
     return req.user;
 });
 ```
+- Now we can get the user from the request
+```ts
+@Post('/test')
+@UseGuards(AuthGuard())
+test(@GetUser() user: User) {
+    console.log(user);
+}
+```
+--> Only for testing, comment it out when running the application
 
-##### Guarding the Tasks routes (Tasks controller)
+##### Guarding the Tasks routes (Tasks controller) using AuthGuard of passport (defined in jwt.strategy.ts)
 - We need to import the Auth Module into the Task Module. Add `AuthModule` to the `imports` array of the `@Module` (tasks/tasks.module.ts).
 - Apply some Guard/s in to Tasks controller for the entire TasksController class (tasks.modules.ts):
 ```ts
 @Controller('tasks')
 @UseGuards(AuthGuard)
 export class TasksController {}
+```
+##### Authoziation - Task Ownership
+- create Task field in the User.Entity using one to many typeorm relationship (one user to many tasks)
+```ts
+// type is Task, and the task is liked to task.user
+// eager = true we can get tasks by user.tasks immediately
+@OneToMany(type => Task, task => task.user, {eager: true})
+tasks: Task[];
+```
+- In the task entity, we want to connect user to each task (many tasks to one user):
+```ts
+// only one side of the relation is eager = true
+@ManyToOne(type => User, user => user.tasks, { eager: false})
+user: User;
+```
+###### Apply the relationships in practice
+- get the user info from the request using GetUser custom decorator in the createTask controller:
+```ts
+@Post()
+@UsePipes(ValidationPipe)
+createTask(
+    @Body() createTaskDto: CreateTaskDto,
+    @GetUser() user: User, // here
+): Promise<Task> {
+    return this.tasksService.createTask(createTaskDto, user); // pass the user to the createTask method
+}
+```
+- use the user in the createTask service (tasks.service.ts):
+```ts
+async createTask(createTaskDto: CreateTaskDto, user: User): Promise<Task> { // here
+    return this.taskRepository.createTask(createTaskDto, user);// pass it to the createTask method in the taskRepository
+}
+```
+- create and update the database in the taskRepository (task.repository.ts):
+```ts
+async createTask(createTaskDto: CreateTaskDto, user: User): Promise<Task> {
+    ...
+    task.user = user;
+    await task.save();
+    delete task.user; // we dont want to return a task containing user information
+    return task;
+}
 ```
