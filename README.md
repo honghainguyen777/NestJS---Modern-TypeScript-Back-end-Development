@@ -785,3 +785,13 @@ port: process.env.RDS_POST || dbConfig.port
 // or 
 secretOrKey: process.env.JWT_SECRET || config.get('jwt.secret')
 ```
+### Deployment
+- recommend to run preprod:prod script before deploying to a web service
+- It could be that you have some minor issues with import paths that still work in development mode. This is especially common when auto-importing files.
+
+- It is very easy to catch these issues with this NPM command, as it builds the application into JavaScript. If any errors show up, they should be very easy to fix (otherwise, use the Q&A section here).
+
+- If you don't do this, and the errors only appear after deploying the application to AWS, it will be annoying and will take a long time to debug and understand what exactly went wrong.
+
+- To do it: `npm run prestart:prod`
+
