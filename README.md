@@ -759,5 +759,29 @@ async createTask(createTaskDto: CreateTaskDto, user: User): Promise<Task> {
 private logger = new Logger('Place to use the logger, classname');
 // and apply it any where we want to log inside the class
 this.logger.verbose("logging message here");
-`
+```
 - Read more at: https://docs.nestjs.com/techniques/logger
+
+### Production: Configuration
+- Set up environment variables via NPM scripts. On windows, install win-node-env package: `npm install -g win-node-env`
+- Configuration is central way of defining values that are loaded upon starting the application (should not be changed during runtime).
+- Configuration per environment - development, staging, production, etc.
+- Configuration can be defined in the course base. Useful if we work with multiple developers via version control. Our configuration should always work for with the code it ships with.
+- Can be defined in many ways (JSON, YAML, XML, Environenment variables, etc), using custom solutions or open-source libraries.
+#### Codebase vs Environment variables
+- We could define configuration in our codebase. For example, in config folder.
+- We could also support configuring values via environment variables (which are provided when running the application).
+- Example: Non-sensitive information such as the port to run the application on, will be defined in the code base. Sensitive information such as database username and password for production mode, will be provided via environment variables upon running the application
+
+#### Configuration Management Set-up
+- install: `npm install config`
+- create a config folder at the root of the application not the src
+- create default.yml (or json), development.yml, and production.yml
+- replace all the sensitive code with the new config like:
+```ts
+import * as config from 'config';
+// and sensitive code now:
+port: process.env.RDS_POST || dbConfig.port
+// or 
+secretOrKey: process.env.JWT_SECRET || config.get('jwt.secret')
+```
